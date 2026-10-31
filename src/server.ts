@@ -1,7 +1,7 @@
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import "dotenv/config"
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 
 const port = process.env.PORT;
 
@@ -27,6 +27,24 @@ app.use(express.json());
 app.get('/', (req: Request, res: Response) => {
     res.send('BookNook server is running');
 });
+
+app.get("/books", async (req: Request, res: Response) => {
+    const result = await booksCollection?.find().toArray();
+    res.send(result);
+})
+
+app.get("/books/:id", async (req: Request, res: Response) => {
+    const id = req.params.id;
+    const query = {_id: new ObjectId(id as string)};
+    const result = await booksCollection?.findOne(query);
+    res.send(result);
+})
+
+app.post("/books", async (req: Request, res: Response) => {
+    const books = req.body;
+    const result = await booksCollection?.insertOne(books);
+    res.send(result);
+})
 
 
 app.listen(port, () => {
