@@ -66,9 +66,21 @@ app.delete("/books/:id", async (req: Request, res: Response) => {
     res.send(result);
 })
 
+app.get("/borrows", async (req: Request, res: Response) => {
+    const result = await borrowsCollection?.find().toArray()
+    res.send(result)
+})
+
 app.post("/borrows", async (req: Request, res: Response) => {
     const data = req.body
     const result = await booksCollection?.insertOne(data)
+    res.send(result)
+})
+
+app.delete("/borrows/:id", async (req: Request, res: Response) => {
+    const id = req.params.id
+    const query = {_id: new ObjectId(id as string)}
+    const result = await borrowsCollection?.deleteOne(query)
     res.send(result)
 })
 
