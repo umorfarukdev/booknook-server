@@ -19,6 +19,7 @@ export async function connectToMongoDB() {
 const mongoClient = await connectToMongoDB();
 const db = mongoClient?.db("booknook");
 const booksCollection = db?.collection("books");
+const borrowsCollection = db?.collection("borrows")
 
 // Middlewares
 app.use(cors());
@@ -63,6 +64,12 @@ app.delete("/books/:id", async (req: Request, res: Response) => {
     const query = {_id: new ObjectId(id as string)};
     const result = await booksCollection?.deleteOne(query);
     res.send(result);
+})
+
+app.post("/borrows", async (req: Request, res: Response) => {
+    const data = req.body
+    const result = await booksCollection?.insertOne(data)
+    res.send(result)
 })
 
 app.listen(port, () => {
