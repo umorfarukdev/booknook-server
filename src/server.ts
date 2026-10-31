@@ -46,6 +46,24 @@ app.post("/books", async (req: Request, res: Response) => {
     res.send(result);
 })
 
+app.patch("/books/:id", async (req: Request, res: Response) => {
+    const id = req.params.id;
+    const updatedBook = req.body;
+    const filter = {_id: new ObjectId(id as string)};
+    const options = { upsert: true };
+    const updateDoc = {
+        $set: updatedBook,
+    };
+    const result = await booksCollection?.updateOne(filter, updateDoc, options);
+    res.send(result);
+})
+
+app.delete("/books/:id", async (req: Request, res: Response) => {
+    const id = req.params.id;
+    const query = {_id: new ObjectId(id as string)};
+    const result = await booksCollection?.deleteOne(query);
+    res.send(result);
+})
 
 app.listen(port, () => {
     console.log(`BookNook server is running on port ${port}`); 
