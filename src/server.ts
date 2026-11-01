@@ -29,6 +29,11 @@ app.get('/', (req: Request, res: Response) => {
     res.send('BookNook server is running');
 });
 
+app.get("/newest-books", async (req: Request, res: Response) => {
+    const result = await booksCollection?.find().sort({date: -1}).limit(6).toArray();
+    res.send(result);
+})
+
 app.get("/books", async (req: Request, res: Response) => {
     const result = await booksCollection?.find().toArray();
     res.send(result);
@@ -41,7 +46,7 @@ app.get("/books/:email", async (req: Request, res: Response) => {
     res.json(result)
 })
 
-app.get("/books/:id", async (req: Request, res: Response) => {
+app.get("/book/:id", async (req: Request, res: Response) => {
     const id = req.params.id;
     const query = {_id: new ObjectId(id as string)};
     const result = await booksCollection?.findOne(query);
@@ -80,7 +85,7 @@ app.get("/borrows", async (req: Request, res: Response) => {
 
 app.post("/borrows", async (req: Request, res: Response) => {
     const data = req.body
-    const result = await booksCollection?.insertOne(data)
+    const result = await borrowsCollection?.insertOne(data)
     res.send(result)
 })
 
