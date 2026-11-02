@@ -69,7 +69,7 @@ app.get("/books", async (req: Request, res: Response) => {
   res.send(result);
 });
 
-app.get("/books/:email", async (req: Request, res: Response) => {
+app.get("/books/:email", verifyToken, async (req: Request, res: Response) => {
   const email = req.params.email;
   const query = { userEmail: email as string };
   const result = await booksCollection?.find(query).toArray();
@@ -83,13 +83,13 @@ app.get("/book/:id", verifyToken, async (req: Request, res: Response) => {
   res.send(result);
 });
 
-app.post("/books", async (req: Request, res: Response) => {
-  const books = req.body;
-  const result = await booksCollection?.insertOne(books);
+app.post("/books", verifyToken, async (req: Request, res: Response) => {
+  const book = req.body;
+  const result = await booksCollection?.insertOne(book);
   res.send(result);
 });
 
-app.patch("/books/:id", async (req: Request, res: Response) => {
+app.patch("/books/:id", verifyToken, async (req: Request, res: Response) => {
   const id = req.params.id;
   const updatedBook = req.body;
   const filter = { _id: new ObjectId(id as string) };
@@ -101,30 +101,85 @@ app.patch("/books/:id", async (req: Request, res: Response) => {
   res.send(result);
 });
 
-app.delete("/books/:id", async (req: Request, res: Response) => {
+app.delete("/books/:id", verifyToken, async (req: Request, res: Response) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id as string) };
   const result = await booksCollection?.deleteOne(query);
   res.send(result);
 });
 
-app.get("/borrows/:email", async (req: Request, res: Response) => {
+app.get("/borrows/:email", verifyToken, async (req: Request, res: Response) => {
   const email = req.params.email;
   const query = { userEmail: email as string };
   const result = await borrowsCollection?.find(query).toArray();
   res.send(result);
 });
 
-app.post("/borrows", async (req: Request, res: Response) => {
+app.post("/borrows", verifyToken, async (req: Request, res: Response) => {
   const data = req.body;
+  if (!ObjectId.isValid(data.bookId)) {
+    return res.status(400).send({ message: "Invalid book ID" });
+  }
+
+  // Check if user already borrowed this book
+  const existingBorrow = await borrowsCollection?.findOne({
+    bookId: data.bookId,
+    userEmail: data.userEmail,
+  });
+
+  if (existingBorrow) {
+    return res.status(400).send({
+      message: "You have already borrowed this book.",
+    });
+  }
+
+  const updateResult = await booksCollection?.updateOne(
+    {
+      _id: new ObjectId(data.bookId),
+      availableCopies: { $gt: 0 },
+    },
+    {
+      $inc: { availableCopies: -1 },
+    },
+  );
+  if (!updateResult || updateResult.modifiedCount === 0) {
+    return res.status(400).send({
+      message: "Book is not available",
+    });
+  }
   const result = await borrowsCollection?.insertOne(data);
   res.send(result);
 });
 
-app.delete("/borrows/:id", async (req: Request, res: Response) => {
+app.delete("/borrows/:id", verifyToken, async (req: Request, res: Response) => {
   const id = req.params.id;
-  const query = { _id: id as string };
-  const result = await borrowsCollection?.deleteOne(query as any);
+
+  if (!ObjectId.isValid(id as string)) {
+    return res.status(400).send({ message: "Invalid borrow ID" });
+  }
+
+  // Find borrow record
+  const borrow = await borrowsCollection?.findOne({
+    _id: new ObjectId(id as string),
+  });
+
+  if (!borrow) {
+    return res.status(404).send({
+      message: "Borrow record not found",
+    });
+  }
+
+  // Delete borrow record
+  const result = await borrowsCollection?.deleteOne({
+    _id: new ObjectId(id as string),
+  });
+
+  if (result?.deletedCount === 1) {
+    await booksCollection?.updateOne(
+      { _id: new ObjectId(borrow.bookId) },
+      { $inc: { availableCopies: 1 } },
+    );
+  }
   res.send(result);
 });
 
