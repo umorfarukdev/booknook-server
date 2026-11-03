@@ -44,7 +44,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   const jwks = createRemoteJWKSet(
-    new URL("http://localhost:3000/api/auth/jwks"),
+    new URL(`${process.env.CLIENT_URL}/api/auth/jwks` as string),
   );
 
   try {
@@ -54,6 +54,10 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     return res.status(401).send({ message: "server error" });
   }
 };
+
+app.get("/", (req: Request, res: Response) => {
+  res.send({ message: "BookNook server is running" });
+});
 
 app.get("/newest-books", async (req: Request, res: Response) => {
   const result = await booksCollection
@@ -186,3 +190,5 @@ app.delete("/borrows/:id", verifyToken, async (req: Request, res: Response) => {
 app.listen(port, () => {
   console.log(`BookNook server is running on port ${port}`);
 });
+
+export default app
